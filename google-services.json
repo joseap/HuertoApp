@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "204243184081",
+    "firebase_url": "https://huerto-alejandro-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "huerto-alejandro",
+    "storage_bucket": "huerto-alejandro.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:204243184081:android:efa173391c50d0f3c598f0",
+        "android_client_info": {
+          "package_name": "com.alejandro.huerto"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBf2CjRV2RC_oN5HsOmnmdDgAJl2twOw1U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
