@@ -7,6 +7,7 @@ Proyecto Android (Kotlin + Jetpack Compose + Firebase) que interactúa con los E
 - Android Studio Giraffe/Flamingo o superior con JDK 17 (o ejecuta el script descrito abajo).
 - SDK Platform 34 instalada.
 - Acceso a una instancia de Firebase Realtime Database siguiendo la estructura `v1` descrita en `../FirebaseEstructura.md`.
+- Archivo `app/google-services.json` generado desde Firebase (no se versiona). Usa el ejemplo `app/google-services.json.example` como plantilla.
 
 ### Configuración rápida del JDK
 
@@ -51,6 +52,7 @@ cd AndroidApp
 ./scripts/setup-jdk.sh                 # sólo la primera vez
 export JAVA_HOME="$(pwd)/.jdks/jdk-21.0.2+13"
 export PATH="$JAVA_HOME/bin:$PATH"
+cp app/google-services.json.example app/google-services.json   # rellena los valores reales
 ./gradlew tasks                        # verifica wrapper y dependencias
 ./gradlew assembleDebug                # genera APK debug
 ```

@@ -1,21 +1,20 @@
 {
   "project_info": {
-    "project_number": "1234567890",
-    "project_id": "huerto-app-demo",
-    "storage_bucket": "huerto-app-demo.appspot.com"
+    "project_number": "YOUR_PROJECT_NUMBER",
+    "project_id": "your-project-id",
+    "storage_bucket": "your-project-id.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1234567890:android:abcdef0123456789",
+        "mobilesdk_app_id": "1:YOUR_PROJECT_NUMBER:android:HASH",
         "android_client_info": {
           "package_name": "com.alejandro.huerto"
         }
       },
-      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDemoKey"
+          "current_key": "YOUR_WEB_API_KEY"
         }
       ],
       "services": {
