@@ -10,3 +10,4 @@ app/build
 *.iml
 /.jdks
 /scripts/*.log
+app/google-services.json

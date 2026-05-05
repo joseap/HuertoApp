@@ -5,35 +5,40 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 
 private val LightColors = lightColorScheme(
-    primary = GreenPrimary,
-    secondary = OrangeAccent,
-    background = GrayBackground,
-    surface = GrayBackground,
-    onPrimary = ColorSchemeDefaults.onPrimary,
-    onSecondary = ColorSchemeDefaults.onSecondary
+    primary = AquaDark,
+    secondary = FreshGreen,
+    tertiary = AlertWarm,
+    background = MistBackground,
+    surface = Color.White,
+    onPrimary = Color.White,
+    onSecondary = Color.White,
+    onBackground = DeepSurface,
+    onSurface = DeepSurface,
 )
 
 private val DarkColors = darkColorScheme(
-    primary = GreenPrimary,
-    secondary = OrangeAccent
+    primary = AquaLight,
+    secondary = FreshGreen,
+    tertiary = AlertWarm,
+    background = DeepSurface,
+    surface = Color(0xFF18373B),
+    onPrimary = DeepSurface,
+    onSecondary = DeepSurface,
+    onBackground = Color.White,
+    onSurface = Color.White,
 )
 
 @Composable
 fun HuertoTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
-    val colorScheme = if (darkTheme) DarkColors else LightColors
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = if (darkTheme) DarkColors else LightColors,
         typography = Typography,
-        content = content
+        content = content,
     )
-}
-
-private object ColorSchemeDefaults {
-    val onPrimary = androidx.compose.ui.graphics.Color.White
-    val onSecondary = androidx.compose.ui.graphics.Color.White
 }

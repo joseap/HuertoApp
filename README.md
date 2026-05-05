@@ -1,6 +1,19 @@
 # Aplicación Android para el sistema Huerto/Depósito
 
-Proyecto Android (Kotlin + Jetpack Compose + Firebase) que interactúa con los ESP32 de Depósito e Invernadero. Incluye navegación inferior, pantallas placeholder para los 5 flujos definidos y dependencias listas para Firebase RTDB, Auth y Hilt.
+Proyecto Android (Kotlin + Jetpack Compose + Hilt + Firebase RTDB) que interactúa con los ESP32 de Depósito e Invernadero. La app está operativa y consume datos reales en tiempo real.
+
+## Estado actual
+
+La app ya implementa funcionalmente:
+
+- **Dashboard en tiempo real**: clima superior/inferior, estado de válvulas, bombas, nivel de depósito y modo de riego.
+- **Control manual**: activación de válvulas con estados explícitos (enviado, confirmado, timeout, error, bloqueo por nivel bajo).
+- **Configuración**: edición de umbrales, calibraciones e intervalos con validación de negocio antes de guardar.
+- **Historial de eventos**: consultas limitadas por volumen para evitar descargar el árbol completo.
+- **Gráfica histórica**: clima de las últimas 24h con consultas acotadas por timestamp y límite.
+- **Indicador de frescura**: muestra si los datos son recientes, obsoletos o último estado conocido.
+- **Navegación Compose**: 5 secciones funcionales con BottomNavigation.
+- **Arquitectura MVVM**: Hilt para inyección, Flows para estado reactivo, repositorio Firebase como capa de datos.
 
 ## Requisitos
 
@@ -31,7 +44,12 @@ AndroidApp/
 │   │   ├── MainActivity.kt
 │   │   ├── HuertoApp.kt              (NavHost y BottomNav)
 │   │   ├── HuertoApplication.kt      (@HiltAndroidApp)
-│   │   └── ui/…                      (theme + pantallas placeholder)
+│   │   ├── data/
+│   │   │   ├── HuertoRepository.kt   (capa de datos Firebase con consultas acotadas)
+│   │   │   └── HuertoModels.kt       (modelos UI y de dominio)
+│   │   └── ui/
+│   │       ├── home/HomeViewModel.kt (estado, validación, control manual)
+│   │       └── screens/Screens.kt    (5 pantallas Compose funcionales)
 │   └── src/main/res                  (strings, temas, manifest, etc.)
 ├── build.gradle.kts                  ← plugins raíz
 ├── settings.gradle.kts               ← configuración repositorios + módulos
@@ -59,15 +77,26 @@ cp app/google-services.json.example app/google-services.json   # rellena los val
 
 > En Android Studio basta con **File → Open…** y seleccionar la carpeta `AndroidApp/`.
 
-## Próximos pasos recomendados
+## Validación de negocio
 
-1. Conectar el proyecto a tu Firebase (añadir `google-services.json`).
-2. Implementar capa de datos (repositorios con Realtime Database y Auth) usando los modelos descritos en `docs/requirements.md`.
-3. Sustituir los placeholders de cada pantalla por composables reales:
-   - Dashboard sensores + acceso a histórico.
-   - Control manual de válvulas y modo global.
-   - Formularios de configuración condicionados por roles.
-   - Historial de eventos y gráfica histórica de temperaturas.
-4. Añadir `ViewModel`s con Hilt y Flows para reflejar el estado en tiempo real.
+La configuración se valida antes de guardar con reglas de negocio explícitas:
 
-Con esta base, puedes iterar sobre UI/UX y lógica de negocio sin tocar los proyectos de firmware.
+- Umbrales de riego entre 0% y 100%, con `min < max` para histéresis.
+- Intervalo de lectura entre 1s y 10min.
+- Máximo de riego entre 1min y 4h.
+- Retardo de reencendido entre 5s y 1h.
+- Calibraciones de sensor con `min > max` y margen mínimo de 500 unidades raw.
+
+## Control manual
+
+Al activar una válvula desde la app:
+
+1. Se publica una intención atómica en `comandos/modoGlobal/*` y `comandos/valvulas/vX/*`.
+2. La app muestra "orden enviada" mientras espera confirmación.
+3. Si la telemetría confirma el cambio, se muestra "confirmada".
+4. Si pasan 8s sin confirmación, se muestra error con contexto (nivel bajo, conectividad).
+
+## Histórico y frescura
+
+- Las consultas de histórico y eventos usan `orderByChild` + `limitToLast`/`startAt` para no descargar ramas completas.
+- Un indicador de frescura clasifica los datos en: recientes (<15s), obsoletos (15-60s) o último estado conocido (>60s).

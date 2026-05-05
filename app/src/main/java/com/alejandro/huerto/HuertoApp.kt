@@ -24,6 +24,7 @@ import androidx.navigation.compose.rememberNavController
 import com.alejandro.huerto.ui.screens.ConfigScreen
 import com.alejandro.huerto.ui.screens.ControlScreen
 import com.alejandro.huerto.ui.screens.DashboardScreen
+import com.alejandro.huerto.ui.screens.HistoricoScreen
 import com.alejandro.huerto.ui.screens.LogsScreen
 import com.alejandro.huerto.ui.screens.TemperatureHistoryScreen
 import com.alejandro.huerto.ui.theme.HuertoTheme
@@ -33,6 +34,7 @@ private const val CONTROL_ROUTE = "control"
 private const val CONFIG_ROUTE = "config"
 private const val LOGS_ROUTE = "logs"
 private const val TEMPERATURE_HISTORY_ROUTE = "temperatureHistory"
+private const val HISTORICO_ROUTE = "historico"
 
 data class HuertoDestination(
     val route: String,
@@ -41,10 +43,11 @@ data class HuertoDestination(
 )
 
 private val bottomDestinations = listOf(
-    HuertoDestination(DASHBOARD_ROUTE, "Dashboard", Icons.Default.Dashboard),
+    HuertoDestination(DASHBOARD_ROUTE, "Inicio", Icons.Default.Dashboard),
     HuertoDestination(CONTROL_ROUTE, "Control", Icons.Default.AutoAwesome),
+    HuertoDestination(HISTORICO_ROUTE, "Histórico", Icons.Default.History),
     HuertoDestination(CONFIG_ROUTE, "Config", Icons.Default.Settings),
-    HuertoDestination(LOGS_ROUTE, "Historial", Icons.Default.History)
+    HuertoDestination(LOGS_ROUTE, "Actividad", Icons.Default.History)
 )
 
 @Composable
@@ -91,6 +94,7 @@ fun HuertoApp() {
                     })
                 }
                 composable(CONTROL_ROUTE) { ControlScreen() }
+                composable(HISTORICO_ROUTE) { HistoricoScreen() }
                 composable(CONFIG_ROUTE) { ConfigScreen() }
                 composable(LOGS_ROUTE) { LogsScreen() }
                 composable(TEMPERATURE_HISTORY_ROUTE) {
