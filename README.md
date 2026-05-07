@@ -10,14 +10,14 @@ La app ya implementa funcionalmente:
 - **Control manual**: activación de válvulas con estados explícitos (enviado, confirmado, timeout, error, bloqueo por nivel bajo).
 - **Configuración**: edición de umbrales, calibraciones e intervalos con validación de negocio antes de guardar.
 - **Historial de eventos**: consultas limitadas por volumen para evitar descargar el árbol completo.
-- **Gráfica histórica**: clima de las últimas 24h con consultas acotadas por timestamp y límite.
+- **Histórico**: últimas 24h móviles para clima y suelo, más retrospectiva climática por día seleccionado con comparativa opcional entre dos fechas.
 - **Indicador de frescura**: muestra si los datos son recientes, obsoletos o último estado conocido.
 - **Navegación Compose**: 5 secciones funcionales con BottomNavigation.
 - **Arquitectura MVVM**: Hilt para inyección, Flows para estado reactivo, repositorio Firebase como capa de datos.
 
 ## Requisitos
 
-- Android Studio Giraffe/Flamingo o superior con JDK 17 (o ejecuta el script descrito abajo).
+- Android Studio reciente con soporte para AGP 8.13.x y JDK 17 para compilar, o JDK 21 si solo quieres usar el entorno descargado por `scripts/setup-jdk.sh`.
 - SDK Platform 34 instalada.
 - Acceso a una instancia de Firebase Realtime Database siguiendo la estructura `v1` descrita en `../FirebaseEstructura.md`.
 - Archivo `app/google-services.json` generado desde Firebase (no se versiona). Usa el ejemplo `app/google-services.json.example` como plantilla.
@@ -53,7 +53,7 @@ AndroidApp/
 │   └── src/main/res                  (strings, temas, manifest, etc.)
 ├── build.gradle.kts                  ← plugins raíz
 ├── settings.gradle.kts               ← configuración repositorios + módulos
-├── gradlew / gradlew.bat + wrapper   ← Gradle 8.7
+├── gradlew / gradlew.bat + wrapper   ← Gradle 8.13
 └── docs/requirements.md              ← requerimientos funcionales de la app
 ```
 
@@ -61,7 +61,7 @@ AndroidApp/
 
 - Jetpack Compose BOM `2024.04.00` (Material 3, Navigation).
 - Firebase BoM `33.3.0` (Auth + Database KTX).
-- Hilt `2.51` + `androidx.hilt:hilt-navigation-compose`.
+- Hilt plugin `2.51.1`, runtime `2.51` + `androidx.hilt:hilt-navigation-compose:1.2.0`.
 
 ## Cómo compilar
 
@@ -99,4 +99,8 @@ Al activar una válvula desde la app:
 ## Histórico y frescura
 
 - Las consultas de histórico y eventos usan `orderByChild` + `limitToLast`/`startAt` para no descargar ramas completas.
+- La pestaña `Histórico` tiene dos bloques:
+  - `Últimas 24h`: ventana móvil real para clima y humedad de suelo por línea.
+  - `Clima por día seleccionado`: carga los 24 buckets horarios de `historico/clima/agregados/hora/{yyyy}/{MM}/{dd}` y permite comparar una segunda fecha en una segunda gráfica.
+- La retrospectiva por fecha solo aplica a variables climáticas; la humedad de suelo sigue limitada a la vista de últimas 24h.
 - Un indicador de frescura clasifica los datos en: recientes (<15s), obsoletos (15-60s) o último estado conocido (>60s).

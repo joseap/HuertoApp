@@ -1,7 +1,7 @@
 # Requisitos funcionales — App Android Huerto/Depósito
 
 ## 1. Objetivo
-Crear una aplicación Android (Kotlin + Jetpack Compose + Firebase) que permita monitorizar los sensores del sistema, operar el riego de forma manual/automática, ajustar parámetros del huerto, revisar actividad reciente y visualizar la evolución climática de las últimas 24 horas.
+Crear una aplicación Android (Kotlin + Jetpack Compose + Firebase) que permita monitorizar los sensores del sistema, operar el riego de forma manual/automática, ajustar parámetros del huerto, revisar actividad reciente y visualizar tanto una ventana móvil de últimas 24 horas como una retrospectiva climática por fecha seleccionada.
 
 ## 2. Fuentes de datos (Realtime Database `v1`)
 | Bloque | Rutas clave | Uso en la app |
@@ -9,8 +9,10 @@ Crear una aplicación Android (Kotlin + Jetpack Compose + Firebase) que permita 
 | `telemetria/deposito` | `nivelBajo`, `llenando`, `valvulas/*`, `bombas/*` | Indicadores en dashboard, alertas.
 | `telemetria/huerto` | `superior/*`, `inferior/*`, `humedadSuelo/sensorX` | Tarjetas de sensores y estado en vivo.
 | `historico/clima/muestras` | `ts`, `superior/*`, `inferior/*` | Gráfica simple de las últimas 24 horas.
+| `historico/clima/agregados/hora/{yyyy}/{MM}/{dd}` | `bucketStartTs`, métricas `avg/min/max` | Retrospectiva climática de las 24 horas naturales del día elegido y comparativa opcional.
+| `historico/suelo/muestras` | `ts`, `sensor1`, `sensor2`, `sensor3` | Evolución de humedad de suelo de las últimas 24 horas.
 | `estado` | `modoGlobal`, `regar/lineaX` | Mostrar estado operativo y origen. Conceptualmente, `modoGlobal` equivale a modo de riego.
-| `comandos` | `valvulas/vX` | Enviar acciones manuales de válvulas desde la app.
+| `comandos` | `modoGlobal`, `valvulas/vX` | Enviar acciones manuales de válvulas y transición a modo manual desde la app.
 | `config` | `huerto/*`, `deposito/*` | Formularios de configuración.
 | `logs/eventos` | eventos recientes | Pantalla secundaria de actividad/log técnico.
 
@@ -35,15 +37,19 @@ Crear una aplicación Android (Kotlin + Jetpack Compose + Firebase) que permita 
     - Permitir calibración raw por sensor (`min = 0%`, `max = 100%`).
     - Ajustes de depósito (`maximoRiegoMs`, `delayReencendido`).
     - Validación y guardado atómico en `config/*`.
-5. **Histórico climático (últimas 24h)**
-    - Mostrar la evolución de temperatura y humedad `superior` e `inferior` durante las últimas 24 horas.
-    - Leer `historico/clima/muestras` con consultas acotadas por `ts` y `limit`, sin descargar el árbol completo.
-    - No incluye comparación de periodos ni agregados por día/mes/año.
+5. **Histórico**
+    - Mostrar una vista de `Últimas 24h` con ventana móvil real desde el momento actual para:
+      - temperatura/humedad `superior` e `inferior`
+      - humedad de suelo de `sensor1..3`
+    - Mostrar una vista de `Clima por día seleccionado` con selector `año/mes/día`.
+    - Leer `historico/clima/agregados/hora/{yyyy}/{MM}/{dd}` para presentar las 24 horas naturales del día elegido.
+    - Permitir activar una segunda fecha climática como comparativa, mostrándola en una segunda gráfica debajo de la principal.
+    - Mantener la retrospectiva por fecha solo para clima; la humedad de suelo no participa en la comparativa por fecha.
 
 ## 4. Navegación
-- Bottom navigation con 4 tabs: `Inicio`, `Actividad`, `Configuración`, `Histórico`.
+- Bottom navigation con 5 tabs: `Inicio`, `Control`, `Histórico`, `Configuración`, `Actividad`.
 - La pantalla principal concentra operación rápida y lectura de estado.
-- La pestaña `Histórico` muestra una vista simple de las últimas 24 horas.
+- La pestaña `Histórico` combina una vista reciente de últimas 24h y una retrospectiva climática por fecha seleccionada.
 
 ## 5. Estados y permisos
 - En el alcance actual no se contempla sistema de roles ni `usuarios/*`.
@@ -60,14 +66,12 @@ Crear una aplicación Android (Kotlin + Jetpack Compose + Firebase) que permita 
 
 ## 7. Datos históricos
 - `logs/eventos` ya puede mostrar eventos con `serverTimestamp` de Firebase para actividad reciente.
-- La app puede mostrar un histórico simple de las últimas 24 horas leyendo muestras crudas con timestamp.
-- La comparación avanzada por periodos queda pospuesta para no crear dependencia operativa de backend o coste adicional.
+- La app ya muestra una ventana móvil de últimas 24 horas leyendo muestras crudas con timestamp para clima y suelo.
+- La app ya consume buckets horarios agregados para cargar retrospectiva climática por día seleccionado y comparativa opcional entre dos fechas.
 
-## 8. Próximos pasos de implementación
-1. Inicializar proyecto Android Studio en `AndroidApp/` (Empty Compose Activity).
-2. Añadir Firebase (BoM) y configurar Auth + Database.
-3. Implementar capa de datos (Repository + UseCases) con `kotlinx.coroutines.flow` para escuchar DB.
-4. Construir pantallas Compose según las 5 vistas descritas.
-5. Añadir pruebas básicas (ViewModel & repositorios fake) y un README específico con instrucciones de build.
+## 8. Trabajo pendiente
+1. Añadir pruebas básicas de `HomeViewModel` y repositorios fake, especialmente para validaciones, control manual y parsing de agregados horarios.
+2. Endurecer seguridad RTDB si el sistema va a salir de un entorno controlado.
+3. Evaluar alertas/notificaciones sobre `telemetria/deposito/nivelBajo` y estados obsoletos.
 
 Este documento servirá como referencia para el desarrollo de la app y se actualizará conforme se añadan nuevas funcionalidades.

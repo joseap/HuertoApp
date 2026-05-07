@@ -9,6 +9,8 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -16,6 +18,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class HuertoRepository @Inject constructor(
     private val database: FirebaseDatabase,
 ) {
@@ -120,6 +123,7 @@ class HuertoRepository @Inject constructor(
                 .sortedBy { it.timestamp }
                 .map { sample ->
                     ClimateHistoryUiPoint(
+                        timestamp = sample.timestamp,
                         timeLabel = historyTimeFormatter.format(Date(sample.timestamp)),
                         superiorTemperature = sample.superiorTemperature.toRoundedIntOrNull() ?: 0,
                         superiorHumidity = sample.superiorHumidity.toRoundedIntOrNull() ?: 0,
@@ -127,6 +131,30 @@ class HuertoRepository @Inject constructor(
                         inferiorHumidity = sample.inferiorHumidity.toRoundedIntOrNull() ?: 0,
                     )
                 }
+        }
+    }
+
+    fun observeClimateAggregateDay(selectedDay: Flow<ClimateSelectedDay>): Flow<List<ClimateHistoryUiPoint>> {
+        return selectedDay.distinctUntilChanged().flatMapLatest { day ->
+            observeValue(
+                root.child("historico").child("clima").child("agregados").child("hora")
+                    .child(day.year.toString())
+                    .child(day.month.toString().padStart(2, '0'))
+                    .child(day.day.toString().padStart(2, '0')),
+            ) { snapshot ->
+                normalizeClimateAggregateBuckets(
+                    snapshot.children.map { bucket ->
+                        ClimateAggregateBucketRaw(
+                            bucketStartTs = bucket.child("bucketStartTs").getValue(Long::class.java),
+                            superiorTemperatureAvg = bucket.child("superior").child("temperatura").child("avg").getValue(Double::class.java),
+                            superiorHumidityAvg = bucket.child("superior").child("humedad").child("avg").getValue(Double::class.java),
+                            inferiorTemperatureAvg = bucket.child("inferior").child("temperatura").child("avg").getValue(Double::class.java),
+                            inferiorHumidityAvg = bucket.child("inferior").child("humedad").child("avg").getValue(Double::class.java),
+                        )
+                    },
+                    historyTimeFormatter,
+                )
+            }
         }
     }
 

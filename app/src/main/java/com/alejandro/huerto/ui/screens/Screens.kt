@@ -46,6 +46,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -63,6 +65,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.alejandro.huerto.data.ActivityLogItem
 import com.alejandro.huerto.data.ClimateHistoryUiPoint
+import com.alejandro.huerto.data.ClimateSelectedDay
 import com.alejandro.huerto.data.HistorySeriesVisibility
 import com.alejandro.huerto.data.HomeFreshnessUiState
 import com.alejandro.huerto.data.HomeStatus
@@ -287,7 +290,7 @@ fun TemperatureHistoryScreen(
             onToggleSeries = { toggle -> viewModel.toggleHistorySeries(toggle) },
         )
         LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            items(history, key = { it.timeLabel + it.superiorTemperature + it.inferiorTemperature }) { point ->
+            items(history, key = { it.timestamp }) { point ->
                 ClimateHistoryRow(point)
             }
         }
@@ -903,18 +906,177 @@ fun HistoricoScreen(
 
         Card(shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Clima — últimas 24h", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                Text("Los datos agregados a largo plazo estarán disponibles cuando el script de agregación se ejecute periódicamente.", style = MaterialTheme.typography.bodySmall, color = Color(0xFF587177))
+                Text("Últimas 24h", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text("Ventana móvil desde este momento hacia atrás. Aquí se muestran clima y humedad de suelo por línea.", style = MaterialTheme.typography.bodySmall, color = Color(0xFF587177))
                 ClimateHistorySection24h(viewModel)
+                HorizontalDivider()
+                Text("Humedad de suelo — últimas 24h", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                SoilHistorySection24h(viewModel)
             }
         }
 
         Card(shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Humedad de suelo — últimas 24h", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                SoilHistorySection24h(viewModel)
+                Text("Clima por día seleccionado", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text("Selecciona año, mes y día para ver las 24 horas naturales de ese día usando agregados horarios.", style = MaterialTheme.typography.bodySmall, color = Color(0xFF587177))
+                ClimateSelectedDaySection(viewModel)
             }
         }
+    }
+}
+
+@Composable
+private fun ClimateSelectedDaySection(viewModel: HomeViewModel) {
+    val selectedDay by viewModel.selectedClimateDay.collectAsState()
+    val selectedDayHistory by viewModel.selectedDayClimateHistory.collectAsState()
+    val comparisonEnabled by viewModel.comparisonEnabled.collectAsState()
+    val comparisonDay by viewModel.comparisonClimateDay.collectAsState()
+    val comparisonDayHistory by viewModel.comparisonDayClimateHistory.collectAsState()
+    val seriesVisibility by viewModel.historySeriesVisibility.collectAsState()
+    var yearText by rememberSaveable(selectedDay.displayLabel()) { androidx.compose.runtime.mutableStateOf(selectedDay.year.toString()) }
+    var monthText by rememberSaveable(selectedDay.displayLabel()) { androidx.compose.runtime.mutableStateOf(selectedDay.month.toString()) }
+    var dayText by rememberSaveable(selectedDay.displayLabel()) { androidx.compose.runtime.mutableStateOf(selectedDay.day.toString()) }
+    var comparisonYearText by rememberSaveable(comparisonDay.displayLabel()) { androidx.compose.runtime.mutableStateOf(comparisonDay.year.toString()) }
+    var comparisonMonthText by rememberSaveable(comparisonDay.displayLabel()) { androidx.compose.runtime.mutableStateOf(comparisonDay.month.toString()) }
+    var comparisonDayText by rememberSaveable(comparisonDay.displayLabel()) { androidx.compose.runtime.mutableStateOf(comparisonDay.day.toString()) }
+
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+        CompactNumericField(
+            modifier = Modifier.weight(1f),
+            label = "Año",
+            value = yearText,
+            onValueChange = { yearText = it },
+        )
+        CompactNumericField(
+            modifier = Modifier.weight(1f),
+            label = "Mes",
+            value = monthText,
+            onValueChange = { monthText = it },
+        )
+        CompactNumericField(
+            modifier = Modifier.weight(1f),
+            label = "Día",
+            value = dayText,
+            onValueChange = { dayText = it },
+        )
+    }
+
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+        Button(
+            onClick = {
+                val year = yearText.toIntOrNull()
+                val month = monthText.toIntOrNull()
+                val day = dayText.toIntOrNull()
+                if (year != null && month != null && day != null && month in 1..12 && day in 1..31) {
+                    viewModel.setSelectedClimateDay(year, month, day)
+                }
+            },
+            modifier = Modifier.weight(1f),
+        ) {
+            Text("Cargar día")
+        }
+        Button(onClick = viewModel::setSelectedClimateDayToToday, modifier = Modifier.weight(1f)) {
+            Text("Hoy")
+        }
+    }
+
+    Text(
+        text = selectedDay.displayLabel(),
+        style = MaterialTheme.typography.bodySmall,
+        color = Color(0xFF587177),
+    )
+
+    if (selectedDayHistory.isEmpty()) {
+        Text("Sin agregados horarios para la fecha seleccionada.", style = MaterialTheme.typography.bodySmall, color = Color(0xFF587177))
+        return
+    }
+
+    ClimateHistoryChart(
+        history = selectedDayHistory,
+        visibility = seriesVisibility,
+        onToggleSeries = { toggle -> viewModel.toggleHistorySeries(toggle) },
+    )
+
+    selectedDayHistory.takeLast(6).reversed().forEach { point ->
+        ClimateHistoryRow(point)
+    }
+
+    HorizontalDivider()
+    FilterChip(
+        selected = comparisonEnabled,
+        onClick = { viewModel.setComparisonEnabled(!comparisonEnabled) },
+        label = { Text(if (comparisonEnabled) "Comparativa activa" else "Comparar con otra fecha") },
+    )
+
+    if (!comparisonEnabled) {
+        return
+    }
+
+    Text(
+        text = "Segunda fecha climática para comparar otra evolución diaria completa.",
+        style = MaterialTheme.typography.bodySmall,
+        color = Color(0xFF587177),
+    )
+
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+        CompactNumericField(
+            modifier = Modifier.weight(1f),
+            label = "Año comp.",
+            value = comparisonYearText,
+            onValueChange = { comparisonYearText = it },
+        )
+        CompactNumericField(
+            modifier = Modifier.weight(1f),
+            label = "Mes comp.",
+            value = comparisonMonthText,
+            onValueChange = { comparisonMonthText = it },
+        )
+        CompactNumericField(
+            modifier = Modifier.weight(1f),
+            label = "Día comp.",
+            value = comparisonDayText,
+            onValueChange = { comparisonDayText = it },
+        )
+    }
+
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+        Button(
+            onClick = {
+                val year = comparisonYearText.toIntOrNull()
+                val month = comparisonMonthText.toIntOrNull()
+                val day = comparisonDayText.toIntOrNull()
+                if (year != null && month != null && day != null && month in 1..12 && day in 1..31) {
+                    viewModel.setComparisonClimateDay(year, month, day)
+                }
+            },
+            modifier = Modifier.weight(1f),
+        ) {
+            Text("Cargar comparativa")
+        }
+        Button(onClick = viewModel::setComparisonClimateDayToYesterday, modifier = Modifier.weight(1f)) {
+            Text("Ayer")
+        }
+    }
+
+    Text(
+        text = comparisonDay.displayLabel(),
+        style = MaterialTheme.typography.bodySmall,
+        color = Color(0xFF587177),
+    )
+
+    if (comparisonDayHistory.isEmpty()) {
+        Text("Sin agregados horarios para la fecha comparativa.", style = MaterialTheme.typography.bodySmall, color = Color(0xFF587177))
+        return
+    }
+
+    ClimateHistoryChart(
+        history = comparisonDayHistory,
+        visibility = seriesVisibility,
+        onToggleSeries = { toggle -> viewModel.toggleHistorySeries(toggle) },
+    )
+
+    comparisonDayHistory.takeLast(6).reversed().forEach { point ->
+        ClimateHistoryRow(point)
     }
 }
 
@@ -1001,3 +1163,22 @@ private fun SoilHistoryChart(history: List<SoilHistoryUiPoint>) {
         }
     }
 }
+
+@Composable
+private fun CompactNumericField(
+    modifier: Modifier,
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = { updated -> if (updated.all(Char::isDigit)) onValueChange(updated) },
+        label = { Text(label) },
+        singleLine = true,
+        modifier = modifier,
+    )
+}
+
+private fun ClimateSelectedDay.displayLabel(): String =
+    "%02d/%02d/%04d".format(day, month, year)

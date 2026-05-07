@@ -61,6 +61,7 @@ data class ClimateHistorySample(
 )
 
 data class ClimateHistoryUiPoint(
+    val timestamp: Long,
     val timeLabel: String,
     val superiorTemperature: Int,
     val superiorHumidity: Int,
@@ -75,9 +76,11 @@ data class SoilHistoryUiPoint(
     val sensor3: Int,
 )
 
-enum class ClimateGranularity {
-    HORA, DIA, MES
-}
+data class ClimateSelectedDay(
+    val year: Int,
+    val month: Int,
+    val day: Int,
+)
 
 data class HistorySeriesVisibility(
     val superiorTemperature: Boolean = true,
